@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Master | Interpreting Graphs</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Chart.js and DataLabels Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+    <style>
+        :root {
+            --bg-color: #F4F1DE;
+            --text-color: #2F3E46;
+            --primary: #3A86FF;
+            --secondary: #FF006E;
+            --tertiary: #FFBE0B;
+            --success: #06D6A0;
+            --danger: #EF476F;
+            --border-color: #2F3E46;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Nav & Tabs */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 5px solid var(--border-color);
+        }
+
+        header h1 {
+            margin: 0;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 0px var(--border-color);
+        }
+
+        .tab-btn {
+            background-color: white;
+            color: var(--border-color);
+            border: 3px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px var(--border-color);
+            transition: all 0.1s;
+        }
+
+        .tab-btn.active {
+            background-color: var(--tertiary);
+            transform: translate(3px, 3px);
+            box-shadow: 0px 0px 0px var(--border-color);
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Game Elements */
+        .card {
+            background: white;
+            border: 4px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 6px 6px 0px var(--border-color);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        select, input[type="text"] {
+            padding: 12px;
+            border: 3px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: 3px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px var(--border-color);
+            transition: all 0.1s;
+            text-transform: uppercase;
+        }
+        .btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px var(--border-color);
+        }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-secondary { background-color: var(--secondary); color: white; }
+        .btn-success { background-color: var(--success); color: var(--border-color); }
+        .btn-danger { background-color: var(--danger); color: white; }
+
+        .chart-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+            background: white;
+            padding: 10px;
+            border: 3px solid var(--border-color);
+            border-radius: 12px;
+        }
+
+        /* Questions Grid */
+        .questions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .questions-grid { grid-template-columns: 1fr; }
+        }
+
+        .question-box {
+            background: #F8F9FA;
+            border: 3px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+        }
+
+        .badge {
+            position: absolute;
+            top: -12px;
+            left: -10px;
+            padding: 4px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 900;
+            color: var(--border-color);
+        }
+        .badge.basic { background-color: var(--success); }
+        .badge.intermediate { background-color: var(--tertiary); }
+        .badge.advanced { background-color: var(--danger); color: white;}
+
+        .question-text {
+            margin: 15px 0 10px 0;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .answer-input {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        .answer-input.correct {
+            background-color: #D1FFEB;
+            border-color: var(--success);
+        }
+        .answer-input.incorrect {
+            background-color: #FFE3E8;
+            border-color: var(--danger);
+        }
+
+        .feedback {
+            font-size: 14px;
+            font-weight: 700;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            border: 2px dashed var(--border-color);
+        }
+        .feedback.correct { background-color: #D1FFEB; color: #038A66; }
+        .feedback.incorrect { background-color: #FFE3E8; color: #BA1A40; }
+
+        .explanation {
+            background-color: var(--bg-color);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+            border: 2px solid var(--border-color);
+        }
+        .explanation span { font-weight: 900; color: var(--primary); }
+
+        .action-bar {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 3px dashed var(--border-color);
+        }
+
+        /* Test specific */
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .score-display {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 20px;
+            background: white;
+            border: 4px solid var(--border-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 6px 6px 0px var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📊 Graph Master</h1>
+        <div>
+            <button class="tab-btn active" id="btnPracticeMode" onclick="switchMode('practice')">Practice Mode</button>
+            <button class="tab-btn" id="btnTestMode" onclick="switchMode('test')">Test Mode</button>
+        </div>
+    </header>
+
+    <!-- PRACTICE MODE -->
+    <div id="practiceContainer" class="container">
+        <div class="card">
+            <div class="controls">
+                <label><strong>Select Graph Type:</strong></label>
+                <select id="graphTypeSelect" onchange="generatePractice()">
+                    <option value="random">🎲 Random</option>
+                    <option value="bar">📊 Bar Graph</option>
+                    <option value="line">📈 Line Graph</option>
+                    <option value="pie">🥧 Pie Graph</option>
+                </select>
+                <button class="btn btn-primary" onclick="generatePractice()">Generate New Problem</button>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="practiceCanvas"></canvas>
+            </div>
+
+            <div id="practiceQuestions" class="questions-grid"></div>
+
+            <div class="action-bar">
+                <button id="btnCheckPractice" class="btn btn-success" onclick="checkPractice()">Check Answers</button>
+                <p id="practiceStatusMsg" style="margin-top: 15px; font-weight: 700;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEST MODE SETUP -->
+    <div id="testSetupContainer" class="container hidden">
+        <div class="card" style="text-align: center; max-width: 500px; margin: 50px auto;">
+            <h2>Are you ready for the Test? 📝</h2>
+            <p>You will face 3 graphs (Bar, Line, Pie) and 18 total questions.</p>
+            <input type="text" id="studentName" placeholder="Enter your name..." style="width: 80%; margin-bottom: 20px;">
+            <br>
+            <button class="btn btn-secondary" onclick="startTest()">🚀 Start Test</button>
+        </div>
+    </div>
+
+    <!-- TEST MODE ACTIVE -->
+    <div id="testActiveContainer" class="container hidden">
+        <div class="test-header">
+            <h2 id="testWelcomeMsg"></h2>
+            <div id="finalScoreDisplay" class="score-display hidden"></div>
+        </div>
+
+        <div id="testProblemsWrapper"></div>
+
+        <div class="action-bar" style="margin-bottom: 50px;">
+            <button class="btn btn-danger" onclick="endTest()">End Test (Cancel)</button>
+            <button id="btnSubmitTest" class="btn btn-success" onclick="submitTest()">Submit Test</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Chart DataLabels globally
+        Chart.register(ChartDataLabels);
+        Chart.defaults.font.family = "'Nunito', sans-serif";
+        Chart.defaults.color = "#2F3E46";
+
+        let currentMode = 'practice'; 
+        let practiceState = 0; 
+        let currentPracticeData = null;
+        let testDataSets =[];
+        let chartInstances = {};
+
+        // Smart Answer Checker
+        // If the correct answer is just a number (e.g., "50"), and the student typed "50 pesos", it extracts the "50" and marks it correct.
+        function checkAns(studentAns, correctAns) {
+            let s = studentAns.toString().toLowerCase().trim();
+            let c = correctAns.toString().toLowerCase().trim();
+            
+            // Check if correct answer is purely numerical
+            if (/^-?\d+(\.\d+)?$/.test(c)) {
+                let match = s.match(/-?\d+(\.\d+)?/); // Extract number from student input
+                if (match) {
+                    return match[0] === c;
+                }
+                return false;
+            }
+            
+            // Otherwise, check alphanumeric match
+            return s.replace(/[^a-z0-9]/g, '') === c.replace(/[^a-z0-9]/g, '');
+        }
+
+        function pickRandom(arr, count) {
+            return[...arr].sort(() => 0.5 - Math.random()).slice(0, count);
+        }
+
+        // ==========================
+        // DATA & QUESTION GENERATORS
+        // ==========================
+
+        function getValidBarData() {
+            // Generates data that GUARANTEES exactly one mode (one duplicate pair) for teaching purposes
+            while(true) {
+                let data =[
+                    Math.floor(Math.random()*6)*5 + 15,
+                    Math.floor(Math.random()*6)*5 + 15,
+                    Math.floor(Math.random()*6)*5 + 15,
+                    0
+                ];
+                // Force a duplicate to ensure a mode exists
+                data[1] = data[0]; 
+
+                let sum3 = data[0]+data[1]+data[2];
+                let targetSum = Math.ceil((sum3 + 15) / 20) * 20; 
+                data[3] = targetSum - sum3;
+                if(data[3] <= 0) data[3] += 20;
+
+                // Count occurrences
+                let counts = {};
+                data.forEach(x => counts[x] = (counts[x]||0)+1);
+                
+                let maxCount = data.filter(x => x === Math.max(...data)).length;
+                let minCount = data.filter(x => x === Math.min(...data)).length;
+                let isUniqueMaxMin = (maxCount === 1 && minCount === 1);
+                
+                // Exactly one mode (one value appears 2 times, rest 1 time)
+                let hasOneMode = Object.values(counts).filter(v => v === 2).length === 1 && 
+                                 Object.values(counts).filter(v => v > 2).length === 0;
+
+                if (isUniqueMaxMin && hasOneMode && Math.min(...data) >= 5) {
+                    return data;
+                }
+            }
+        }
+
+        function generateBarData() {
+            const themes =[
+                { title: "Books Read in a Semester", label: "Number of Books", unit: "books", itemLabel: "Student", items:["Alice", "Bob", "Charlie", "Diana"] },
+                { title: "Fruit Sold at Canteen", label: "Pieces Sold", unit: "pieces of fruit", itemLabel: "Fruit", items:["Apples", "Bananas", "Oranges", "Mangoes"] },
+                { title: "Sports Played by Grade 8", label: "Number of Students", unit: "students", itemLabel: "Sport", items:["Basketball", "Soccer", "Volleyball", "Tennis"] },
+                { title: "Vehicles in the Parking Lot", label: "Number of Vehicles", unit: "vehicles", itemLabel: "Vehicle Type", items:["Cars", "Motorcycles", "Bicycles", "Vans"] }
+            ];
+            const theme = themes[Math.floor(Math.random() * themes.length)];
+            let data = getValidBarData();
+
+            let maxVal = Math.max(...data);
+            let minVal = Math.min(...data);
+            let maxItem = theme.items[data.indexOf(maxVal)];
+            let minItem = theme.items[data.indexOf(minVal)];
+            let total = data.reduce((a,b)=>a+b, 0);
+
+            // Find the mode value
+            let counts = {};
+            data.forEach(x => counts[x] = (counts[x]||0)+1);
+            let modeVal = Object.keys(counts).find(k => counts[k] === 2);
+
+            let basicQs =[
+                { type: "Basic", q: `How many ${theme.unit} are associated with ${theme.items[0]}?`, a: data[0].toString(), expl: `Trace the bar for ${theme.items[0]} to the vertical axis to find ${data[0]}.` },
+                { type: "Basic", q: `Which ${theme.itemLabel.toLowerCase()} has the highest number of ${theme.unit}?`, a: maxItem, expl: `The tallest bar is ${maxItem} with a value of ${maxVal}.` },
+                { type: "Basic", q: `Which ${theme.itemLabel.toLowerCase()} has the lowest number of ${theme.unit}?`, a: minItem, expl: `The shortest bar is ${minItem} with a value of ${minVal}.` },
+                { type: "Basic", q: `How many ${theme.unit} correspond to ${theme.items[2]}?`, a: data[2].toString(), expl: `Trace the bar for ${theme.items[2]} to the vertical axis to find ${data[2]}.` }
+            ];
+
+            let interQs =[
+                { type: "Intermediate", q: `How many more ${theme.unit} does ${maxItem} have compared to ${minItem}?`, a: (maxVal - minVal).toString(), expl: `${maxVal} (${maxItem}) - ${minVal} (${minItem}) = ${maxVal - minVal}.` },
+                { type: "Intermediate", q: `What is the combined total of ${theme.unit} for ${theme.items[1]} and ${theme.items[2]}?`, a: (data[1]+data[2]).toString(), expl: `${data[1]} + ${data[2]} = ${data[1]+data[2]}.` },
+                { type: "Intermediate", q: `How many fewer ${theme.unit} does ${theme.items[3]} have than ${theme.items[0]}?`, a: Math.abs(data[0] - data[3]).toString(), expl: `|${data[0]} - ${data[3]}| = ${Math.abs(data[0] - data[3])}.` },
+                { type: "Intermediate", q: `What is the mode of the data values shown in the graph?`, a: modeVal.toString(), expl: `The mode is the number that appears most often. The value ${modeVal} appears twice.` }
+            ];
+
+            let advQs =[
+                { type: "Advanced", q: `What is the average number of ${theme.unit} per ${theme.itemLabel.toLowerCase()}?`, a: (total/4).toString(), expl: `Total is ${total}. Divide by 4 ${theme.itemLabel.toLowerCase()}s: ${total} ÷ 4 = ${total/4}.` },
+                { type: "Advanced", q: `What is the total sum of all ${theme.unit} across all categories?`, a: total.toString(), expl: `${data[0]} + ${data[1]} + ${data[2]} + ${data[3]} = ${total}.` },
+                { type: "Advanced", q: `If 15 more ${theme.unit} were added to ${theme.items[3]}, what would be the new overall total?`, a: (total+15).toString(), expl: `Current total is ${total}. ${total} + 15 = ${total+15}.` },
+                { type: "Advanced", q: `If the number of ${theme.unit} for ${theme.items[1]} was doubled, what would its value be?`, a: (data[1]*2).toString(), expl: `Current value is ${data[1]}. ${data[1]} × 2 = ${data[1]*2}.` }
+            ];
+
+            let qs =[...pickRandom(basicQs, 2), ...pickRandom(interQs, 2), ...pickRandom(advQs, 2)];
+            return { type: 'bar', theme, data, qs };
+        }
+
+        function getValidLineData() {
+            while(true) {
+                let data =[
+                    Math.floor(Math.random()*6)*5 + 15,
+                    Math.floor(Math.random()*6)*5 + 15,
+                    Math.floor(Math.random()*6)*5 + 15,
+                    Math.floor(Math.random()*6)*5 + 15,
+                    0
+                ];
+                if (data[1] === data[0]) data[1] += 5;
+                if (data[3] === data[2]) data[3] += 5;
+                
+                let sum4 = data[0]+data[1]+data[2]+data[3];
+                let targetSum = Math.ceil(sum4 / 25) * 25;
+                data[4] = targetSum - sum4;
+                if(data[4] <= 0) data[4] += 25;
+                
+                let maxCount = data.filter(x => x === Math.max(...data)).length;
+                let minCount = data.filter(x => x === Math.min(...data)).length;
+                
+                if (maxCount === 1 && minCount === 1 && Math.min(...data) >= 5) {
+                    return data;
+                }
+            }
+        }
+
+        function generateLineData() {
+            const themes =[
+                { title: "Temperature Over 5 Days", label: "Temp (°C)", unit: "°C", itemLabel: "Day", items:["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] },
+                { title: "Monthly Savings", label: "Amount (₱)", unit: "pesos", itemLabel: "Month", items:["Jan", "Feb", "Mar", "Apr", "May"] },
+                { title: "Website Visitors", label: "Number of Visitors", unit: "visitors", itemLabel: "Time", items:["8 AM", "10 AM", "12 PM", "2 PM", "4 PM"] },
+                { title: "Distance Ran", label: "Distance (km)", unit: "km", itemLabel: "Day", items:["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"] }
+            ];
+            const theme = themes[Math.floor(Math.random() * themes.length)];
+            let data = getValidLineData();
+
+            let maxVal = Math.max(...data);
+            let minVal = Math.min(...data);
+            let maxItem = theme.items[data.indexOf(maxVal)];
+            let minItem = theme.items[data.indexOf(minVal)];
+            let total = data.reduce((a,b)=>a+b, 0);
+
+            // Calculate Median
+            let sortedData = [...data].sort((a,b) => a - b);
+            let medianVal = sortedData[2];
+
+            let diffStr1 = data[1] > data[0] ? "increase" : "decrease";
+            let diffStr2 = data[3] > data[2] ? "increase" : "decrease";
+
+            let basicQs =[
+                { type: "Basic", q: `What was the value in ${theme.unit} on ${theme.items[2]}?`, a: data[2].toString(), expl: `Find ${theme.items[2]} on the bottom axis and trace to the left axis: ${data[2]}.` },
+                { type: "Basic", q: `On which ${theme.itemLabel.toLowerCase()} was the value the lowest?`, a: minItem, expl: `The lowest point on the graph is at ${minItem} (${minVal}).` },
+                { type: "Basic", q: `On which ${theme.itemLabel.toLowerCase()} was the value the highest?`, a: maxItem, expl: `The highest point on the graph is at ${maxItem} (${maxVal}).` },
+                { type: "Basic", q: `What was the value in ${theme.unit} on ${theme.items[4]}?`, a: data[4].toString(), expl: `Find ${theme.items[4]} on the bottom axis and trace to the left axis: ${data[4]}.` }
+            ];
+
+            let interQs =[
+                { type: "Intermediate", q: `What is the positive difference in ${theme.unit} between ${theme.items[1]} and ${theme.items[3]}?`, a: Math.abs(data[1]-data[3]).toString(), expl: `|${data[1]} - ${data[3]}| = ${Math.abs(data[1]-data[3])}.` },
+                { type: "Intermediate", q: `Did the number of ${theme.unit} 'increase' or 'decrease' from ${theme.items[0]} to ${theme.items[1]}?`, a: diffStr1, expl: `It went from ${data[0]} to ${data[1]}, which is a ${diffStr1}.` },
+                { type: "Intermediate", q: `Did the number of ${theme.unit} 'increase' or 'decrease' from ${theme.items[2]} to ${theme.items[3]}?`, a: diffStr2, expl: `It went from ${data[2]} to ${data[3]}, which is a ${diffStr2}.` },
+                { type: "Intermediate", q: `What is the median value of the ${theme.unit} recorded across the 5 points?`, a: medianVal.toString(), expl: `Sorted values: ${sortedData.join(', ')}. The middle number is ${medianVal}.` }
+            ];
+
+            let advQs =[
+                { type: "Advanced", q: `What is the average number of ${theme.unit} across all 5 ${theme.itemLabel.toLowerCase()}s?`, a: (total/5).toString(), expl: `Sum is ${total}. Divided by 5 = ${total/5}.` },
+                { type: "Advanced", q: `What is the range of the data (highest minus lowest in ${theme.unit})?`, a: (maxVal - minVal).toString(), expl: `Highest (${maxVal}) - Lowest (${minVal}) = ${maxVal - minVal}.` },
+                { type: "Advanced", q: `What is the total sum of all values recorded?`, a: total.toString(), expl: `${data.join(' + ')} = ${total}.` },
+                { type: "Advanced", q: `If the trend continued and the next point was 10 higher than ${theme.items[4]}, what would its value be?`, a: (data[4]+10).toString(), expl: `Value at ${theme.items[4]} is ${data[4]}. ${data[4]} + 10 = ${data[4]+10}.` }
+            ];
+
+            let qs =[...pickRandom(basicQs, 2), ...pickRandom(interQs, 2), ...pickRandom(advQs, 2)];
+            return { type: 'line', theme, data, qs };
+        }
+
+        function generatePieData() {
+            const themes =[
+                { title: "Monthly Budget Planner", label: "Percent (%)", unit: "pesos", itemLabel: "Category", totalGen: 10000, items:["Food", "Rent", "Savings", "Fun"] },
+                { title: "Preferred Transportation", label: "Percent (%)", unit: "students", itemLabel: "Transport Mode", totalGen: 200, items: ["Bus", "Car", "Walk", "Train"] },
+                { title: "Streaming Video Genres", label: "Percent (%)", unit: "viewers", itemLabel: "Genre", totalGen: 500, items:["Comedy", "Action", "Drama", "Sci-Fi"] },
+                { title: "Weekend Activities", label: "Percent (%)", unit: "teens", itemLabel: "Activity", totalGen: 300, items:["Gaming", "Sports", "Reading", "Chores"] }
+            ];
+            const theme = themes[Math.floor(Math.random() * themes.length)];
+            
+            let splits = [[40, 30, 20, 10],[50, 25, 15, 10],[35, 30, 20, 15]];
+            let data = splits[Math.floor(Math.random() * splits.length)].sort(() => Math.random() - 0.5);
+            
+            let maxVal = Math.max(...data);
+            let minVal = Math.min(...data);
+            let maxItem = theme.items[data.indexOf(maxVal)];
+            let minItem = theme.items[data.indexOf(minVal)];
+            let yesNo = (data[0] + data[1] > 50) ? "yes" : "no";
+
+            // Generate clean multiple for working backwards question
+            let sampleTotal = Math.floor(Math.random() * 5 + 1) * 100; // 100, 200, 300, 400, or 500
+            let item2Val = (data[2] / 100) * sampleTotal;
+
+            let basicQs =[
+                { type: "Basic", q: `Which ${theme.itemLabel.toLowerCase()} takes up the largest portion?`, a: maxItem, expl: `The largest slice is ${maxItem} with ${maxVal}%.` },
+                { type: "Basic", q: `Which ${theme.itemLabel.toLowerCase()} takes up the smallest portion?`, a: minItem, expl: `The smallest slice is ${minItem} with ${minVal}%.` },
+                { type: "Basic", q: `What percentage is allocated to ${theme.items[1]}? (Type number only)`, a: data[1].toString(), expl: `The slice for ${theme.items[1]} shows ${data[1]}%.` },
+                { type: "Basic", q: `What percentage is allocated to ${theme.items[2]}? (Type number only)`, a: data[2].toString(), expl: `The slice for ${theme.items[2]} shows ${data[2]}%.` }
+            ];
+
+            let interQs =[
+                { type: "Intermediate", q: `What is the combined percentage of ${theme.items[2]} and ${theme.items[3]}?`, a: (data[2]+data[3]).toString(), expl: `${data[2]}% + ${data[3]}% = ${data[2]+data[3]}%.` },
+                { type: "Intermediate", q: `How much larger is the percentage for ${maxItem} compared to ${minItem}?`, a: (maxVal-minVal).toString(), expl: `${maxVal}% - ${minVal}% = ${maxVal-minVal}%.` },
+                { type: "Intermediate", q: `Is the combined percentage of ${theme.items[0]} and ${theme.items[1]} more than 50%? (Type 'yes' or 'no')`, a: yesNo, expl: `${data[0]}% + ${data[1]}% = ${data[0]+data[1]}%. Is this more than 50? ${yesNo.toUpperCase()}.` },
+                { type: "Intermediate", q: `What is the combined percentage of ${theme.items[0]} and ${theme.items[2]}?`, a: (data[0]+data[2]).toString(), expl: `${data[0]}% + ${data[2]}% = ${data[0]+data[2]}%.` }
+            ];
+
+            let advQs =[
+                { type: "Advanced", q: `If the total surveyed is ${theme.totalGen} ${theme.unit}, how many ${theme.unit} does ${theme.items[1]} represent?`, a: (data[1] * (theme.totalGen/100)).toString(), expl: `${data[1]}% of ${theme.totalGen} = (${data[1]}/100) * ${theme.totalGen} = ${data[1] * (theme.totalGen/100)}.` },
+                { type: "Advanced", q: `If ${theme.items[2]} represents ${item2Val} ${theme.unit}, what is the total number of ${theme.unit} for the whole graph?`, a: sampleTotal.toString(), expl: `If ${data[2]}% = ${item2Val}, then 1% = ${item2Val/data[2]}. So 100% = ${sampleTotal}.` },
+                { type: "Advanced", q: `If the total is 500 ${theme.unit}, how many more ${theme.unit} are in ${maxItem} than in ${minItem}?`, a: ((maxVal - minVal) * 5).toString(), expl: `Difference is ${maxVal - minVal}%. ${maxVal - minVal}% of 500 = ${maxVal - minVal} × 5 = ${(maxVal - minVal) * 5}.` },
+                { type: "Advanced", q: `If the total is 100 ${theme.unit}, what is the sum of ${theme.unit} for ${theme.items[0]} and ${theme.items[3]}?`, a: (data[0] + data[3]).toString(), expl: `Since the total is 100, the percentages equal the specific units. ${data[0]} + ${data[3]} = ${data[0] + data[3]}.` }
+            ];
+
+            let qs =[...pickRandom(basicQs, 2), ...pickRandom(interQs, 2), ...pickRandom(advQs, 2)];
+            return { type: 'pie', theme, data, qs };
+        }
+
+        function getGraphData(forcedType) {
+            let type = forcedType;
+            if(!type || type === 'random') {
+                const types = ['bar', 'line', 'pie'];
+                type = types[Math.floor(Math.random() * types.length)];
+            }
+            if(type === 'bar') return generateBarData();
+            if(type === 'line') return generateLineData();
+            if(type === 'pie') return generatePieData();
+        }
+
+        // ==========================
+        // RENDERING ENGINES
+        // ==========================
+
+        function renderChartCanvas(canvasId, graphData) {
+            if(chartInstances[canvasId]) {
+                chartInstances[canvasId].destroy();
+            }
+
+            let ctx = document.getElementById(canvasId).getContext('2d');
+            let config = {
+                type: graphData.type,
+                data: {
+                    labels: graphData.theme.items,
+                    datasets:[{
+                        label: graphData.theme.label,
+                        data: graphData.data,
+                        backgroundColor:['#3A86FF', '#FF006E', '#FFBE0B', '#06D6A0', '#8338EC'],
+                        borderColor: '#2F3E46',
+                        borderWidth: 2,
+                        tension: 0.3, 
+                        fill: graphData.type === 'line' ? false : true,
+                        pointBackgroundColor: '#FF006E',
+                        pointBorderWidth: 3,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: graphData.theme.title, font: { size: 20, weight: '900' } },
+                        legend: { display: graphData.type === 'pie', position: 'bottom' },
+                        tooltip: { enabled: false }, // DISABLED HOVER TOOLTIPS
+                        datalabels: {
+                            display: graphData.type === 'pie', // ONLY SHOW TEXT ON PIE CHARTS
+                            color: '#fff',
+                            font: { weight: 'bold', size: 14 },
+                            formatter: (value, context) => {
+                                return value + '%';
+                            },
+                            anchor: 'center',
+                            align: 'center'
+                        }
+                    },
+                    scales: graphData.type !== 'pie' ? {
+                        x: {
+                            title: { display: true, text: graphData.theme.itemLabel.toUpperCase(), font: { size: 14, weight: 'bold' } }
+                        },
+                        y: { 
+                            title: { display: true, text: graphData.theme.label.toUpperCase(), font: { size: 14, weight: 'bold' } },
+                            beginAtZero: true, 
+                            suggestedMax: Math.max(...graphData.data) + 10,
+                            ticks: { stepSize: 5 } // ENSURES GRID LINES MATCH THE DATA GENERATOR
+                        }
+                    } : {}
+                }
+            };
+            chartInstances[canvasId] = new Chart(ctx, config);
+        }
+
+        function createQuestionsHTML(qs, prefixId) {
+            let html = '';
+            qs.forEach((q, i) => {
+                html += `
+                <div class="question-box">
+                    <div class="badge ${q.type.toLowerCase()}">${q.type}</div>
+                    <p class="question-text">${i+1}. ${q.q}</p>
+                    <input type="text" id="${prefixId}_q${i}" class="answer-input" placeholder="Your answer...">
+                    <div id="${prefixId}_f${i}" class="feedback hidden"></div>
+                    <div id="${prefixId}_e${i}" class="explanation hidden">
+                        <span>Answer: ${q.a}</span><br>${q.expl}
+                    </div>
+                </div>`;
+            });
+            return html;
+        }
+
+        // ==========================
+        // PRACTICE MODE LOGIC
+        // ==========================
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('btnPracticeMode').classList.toggle('active', mode === 'practice');
+            document.getElementById('btnTestMode').classList.toggle('active', mode === 'test');
+            
+            document.getElementById('practiceContainer').classList.toggle('hidden', mode !== 'practice');
+            
+            if(mode === 'test') {
+                document.getElementById('testSetupContainer').classList.remove('hidden');
+                document.getElementById('testActiveContainer').classList.add('hidden');
+                document.getElementById('studentName').value = '';
+            } else {
+                document.getElementById('testSetupContainer').classList.add('hidden');
+                document.getElementById('testActiveContainer').classList.add('hidden');
+                if(!currentPracticeData) generatePractice();
+            }
+        }
+
+        function generatePractice() {
+            let type = document.getElementById('graphTypeSelect').value;
+            currentPracticeData = getGraphData(type);
+            practiceState = 0;
+            
+            renderChartCanvas('practiceCanvas', currentPracticeData);
+            document.getElementById('practiceQuestions').innerHTML = createQuestionsHTML(currentPracticeData.qs, 'prac');
+            
+            let btn = document.getElementById('btnCheckPractice');
+            btn.innerText = "Check Answers";
+            btn.className = "btn btn-success";
+            btn.style.display = "inline-block";
+            document.getElementById('practiceStatusMsg').innerText = "";
+        }
+
+        function checkPractice() {
+            if(practiceState === 0) {
+                let allCorrect = true;
+                currentPracticeData.qs.forEach((q, i) => {
+                    let inp = document.getElementById(`prac_q${i}`);
+                    let fdbk = document.getElementById(`prac_f${i}`);
+                    
+                    if (checkAns(inp.value, q.a)) {
+                        inp.className = "answer-input correct";
+                        fdbk.innerText = "✅ Correct!";
+                        fdbk.className = "feedback correct";
+                    } else {
+                        inp.className = "answer-input incorrect";
+                        fdbk.innerText = "❌ Incorrect. Try again!";
+                        fdbk.className = "feedback incorrect";
+                        allCorrect = false;
+                    }
+                    fdbk.classList.remove('hidden');
+                });
+
+                if(allCorrect) {
+                    practiceState = 2;
+                    lockPracticeAndShowExplanations();
+                    document.getElementById('practiceStatusMsg').innerText = "Perfect! 🎉 Generating a new problem is recommended.";
+                    document.getElementById('btnCheckPractice').style.display = "none";
+                } else {
+                    practiceState = 1;
+                    document.getElementById('btnCheckPractice').innerText = "Show Correct Answers";
+                    document.getElementById('btnCheckPractice').className = "btn btn-danger";
+                    document.getElementById('practiceStatusMsg').innerText = "Some answers are incorrect. Edit them and check again, or click the button to see the answers.";
+                }
+            } else if (practiceState === 1) {
+                practiceState = 2;
+                lockPracticeAndShowExplanations();
+                document.getElementById('btnCheckPractice').style.display = "none";
+                document.getElementById('practiceStatusMsg').innerText = "Answers locked. Review the explanations below!";
+            }
+        }
+
+        function lockPracticeAndShowExplanations() {
+            currentPracticeData.qs.forEach((q, i) => {
+                let inp = document.getElementById(`prac_q${i}`);
+                inp.disabled = true;
+                
+                let expl = document.getElementById(`prac_e${i}`);
+                expl.classList.remove('hidden');
+                
+                if(!checkAns(inp.value, q.a)) {
+                    document.getElementById(`prac_f${i}`).innerHTML = `❌ Your answer was incorrect.`;
+                }
+            });
+        }
+
+        // ==========================
+        // TEST MODE LOGIC
+        // ==========================
+
+        function startTest() {
+            let name = document.getElementById('studentName').value.trim();
+            if(!name) { alert("Please enter your name!"); return; }
+
+            document.getElementById('testSetupContainer').classList.add('hidden');
+            document.getElementById('testActiveContainer').classList.remove('hidden');
+            document.getElementById('testWelcomeMsg').innerText = `Good Luck, ${name}! 🍀`;
+            document.getElementById('finalScoreDisplay').classList.add('hidden');
+            document.getElementById('btnSubmitTest').style.display = "inline-block";
+
+            // Generate 3 specific types
+            testDataSets =[
+                getGraphData('bar'),
+                getGraphData('line'),
+                getGraphData('pie')
+            ];
+
+            let wrapper = document.getElementById('testProblemsWrapper');
+            wrapper.innerHTML = '';
+
+            testDataSets.forEach((dataset, idx) => {
+                wrapper.innerHTML += `
+                <div class="card">
+                    <h3 style="text-align:center; margin-top:0;">Problem Set ${idx+1}</h3>
+                    <div class="chart-container">
+                        <canvas id="testCanvas_${idx}"></canvas>
+                    </div>
+                    <div class="questions-grid">
+                        ${createQuestionsHTML(dataset.qs, `test_${idx}`)}
+                    </div>
+                </div>`;
+            });
+
+            setTimeout(() => {
+                testDataSets.forEach((dataset, idx) => {
+                    renderChartCanvas(`testCanvas_${idx}`, dataset);
+                });
+            }, 100);
+        }
+
+        function endTest() {
+            if(confirm("Are you sure? You will lose all your answers!")) {
+                switchMode('test');
+            }
+        }
+
+        function submitTest() {
+            if(!confirm("Ready to submit? You cannot change your answers after submitting.")) return;
+
+            let score = 0;
+            let total = 18; // 3 graphs * 6 qs
+
+            testDataSets.forEach((dataset, setIdx) => {
+                dataset.qs.forEach((q, qIdx) => {
+                    let inp = document.getElementById(`test_${setIdx}_q${qIdx}`);
+                    let fdbk = document.getElementById(`test_${setIdx}_f${qIdx}`);
+                    let expl = document.getElementById(`test_${setIdx}_e${qIdx}`);
+
+                    inp.disabled = true;
+
+                    if (checkAns(inp.value, q.a)) {
+                        score++;
+                        inp.className = "answer-input correct";
+                        fdbk.innerText = "✅ Correct!";
+                        fdbk.className = "feedback correct";
+                    } else {
+                        inp.className = "answer-input incorrect";
+                        fdbk.innerText = "❌ Incorrect.";
+                        fdbk.className = "feedback incorrect";
+                    }
+                    
+                    fdbk.classList.remove('hidden');
+                    expl.classList.remove('hidden');
+                });
+            });
+
+            let scoreBox = document.getElementById('finalScoreDisplay');
+            scoreBox.innerText = `Final Score: ${score} / ${total}`;
+            scoreBox.classList.remove('hidden');
+            
+            document.getElementById('btnSubmitTest').style.display = "none";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Init App
+        generatePractice();
+
+    </script>
+</body>
+</html>
